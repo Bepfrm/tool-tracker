@@ -14,15 +14,6 @@ Raspberry Pi Pico W reads the switches and sends updates through ntfy.
 Only connect the signal and ground wires from each VEX switch. Leave the red
 wire disconnected.
 
-## Setup
-
-1. Make a copy of `secrets.py.example` named `secrets.py`.
-2. Put your Wi-Fi information and ntfy topic in that file.
-3. Upload `main.py` and `secrets.py` to the Pico.
-4. Subscribe to the same topic in the ntfy app.
-
-Do not upload `secrets.py` to GitHub. It is ignored by the repository.
-
 ## Commands
 
 - `/status` shows the state of all three tools.
@@ -30,3 +21,9 @@ Do not upload `secrets.py` to GitHub. It is ignored by the repository.
 - `/on` starts them again.
 
 The longer commands `/notifications off` and `/notifications on` also work.
+
+## Work Done
+
+- Cad files - me
+- Code - me, my brother, and codex for debugging
+- wiring and such - me 
