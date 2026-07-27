@@ -1,0 +1,6 @@
+*.step -text
+*.stl -text
+*.png -text
+*.py text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
