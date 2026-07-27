@@ -5,16 +5,24 @@ import ujson
 import network
 import urequests
 
-from secrets import (
-    WIFI_PASSWORD,
-    WIFI_SSID,
-    NOTIFICATIONS_START_ENABLED,
-    NTFY_TOPIC,
+import secrets
+
+
+WIFI_PASSWORD = secrets.WIFI_PASSWORD
+WIFI_SSID = secrets.WIFI_SSID
+NTFY_TOPIC = secrets.NTFY_TOPIC
+NOTIFICATIONS_START_ENABLED = getattr(
+    secrets, "NOTIFICATIONS_START_ENABLED", True
 )
 
 
-switch = Pin(4, Pin.IN, Pin.PULL_UP)
 led = Pin("LED", Pin.OUT)
+
+tools = [
+    {"number": 1, "pin": Pin(0, Pin.IN, Pin.PULL_UP)},  # Physical pin 1
+    {"number": 2, "pin": Pin(4, Pin.IN, Pin.PULL_UP)},  # Physical pin 6
+    {"number": 3, "pin": Pin(1, Pin.IN, Pin.PULL_UP)},  # Physical pin 2
+]
 
 NTFY_URL = "https://ntfy.sh/" + NTFY_TOPIC
 POLL_INTERVAL_MS = 5000
@@ -22,6 +30,14 @@ DEBOUNCE_MS = 60
 
 notifications_enabled = NOTIFICATIONS_START_ENABLED
 last_message_id = None
+
+
+def tool_is_present(tool):
+    return tool["pin"].value() == 0
+
+
+def update_led():
+    led.value(1 if any(tool["stable_present"] for tool in tools) else 0)
 
 
 def connect_wifi():
@@ -81,11 +97,19 @@ def handle_command(command):
         )
 
     elif command == "/status":
-        tool_state = "PRESENT" if switch.value() == 0 else "REMOVED"
         alert_state = "ON" if notifications_enabled else "OFF"
+        status_lines = []
+
+        for tool in tools:
+            tool_state = "PRESENT" if tool_is_present(tool) else "REMOVED"
+            status_lines.append(
+                "Tool {}: {}".format(tool["number"], tool_state)
+            )
+
+        status_lines.append("Notifications: " + alert_state)
         publish(
             "Tool Tracker Status",
-            "Tool: {}\nNotifications: {}".format(tool_state, alert_state),
+            "\n".join(status_lines),
             force=True,
         )
 
@@ -130,34 +154,55 @@ publish(
 # Start after the online message so cached commands are not replayed on reboot.
 check_commands(execute=False)
 
-stable_pressed = switch.value() == 0
-last_raw_pressed = stable_pressed
-raw_changed_at = time.ticks_ms()
+now = time.ticks_ms()
+
+for tool in tools:
+    present = tool_is_present(tool)
+    tool["stable_present"] = present
+    tool["last_raw_present"] = present
+    tool["raw_changed_at"] = now
+    print(
+        "Tool {}: {}".format(
+            tool["number"], "PRESENT" if present else "REMOVED"
+        )
+    )
+
 last_poll_at = time.ticks_ms()
-led.value(1 if stable_pressed else 0)
+update_led()
 
 
 while True:
     now = time.ticks_ms()
-    raw_pressed = switch.value() == 0
 
-    if raw_pressed != last_raw_pressed:
-        last_raw_pressed = raw_pressed
-        raw_changed_at = now
+    for tool in tools:
+        raw_present = tool_is_present(tool)
 
-    if (
-        raw_pressed != stable_pressed
-        and time.ticks_diff(now, raw_changed_at) >= DEBOUNCE_MS
-    ):
-        stable_pressed = raw_pressed
-        led.value(1 if stable_pressed else 0)
+        if raw_present != tool["last_raw_present"]:
+            tool["last_raw_present"] = raw_present
+            tool["raw_changed_at"] = now
 
-        if stable_pressed:
-            print("Tool returned")
-            publish("Tool Returned", "The tool is back in its slot")
-        else:
-            print("Tool removed")
-            publish("Tool Removed", "The tool was removed from its slot")
+        if (
+            raw_present != tool["stable_present"]
+            and time.ticks_diff(now, tool["raw_changed_at"])
+            >= DEBOUNCE_MS
+        ):
+            tool["stable_present"] = raw_present
+            update_led()
+
+            tool_number = tool["number"]
+
+            if raw_present:
+                print("Tool {} returned".format(tool_number))
+                publish(
+                    "Tool {} Returned".format(tool_number),
+                    "Tool {} is back in its slot".format(tool_number),
+                )
+            else:
+                print("Tool {} removed".format(tool_number))
+                publish(
+                    "Tool {} Removed".format(tool_number),
+                    "Tool {} was removed from its slot".format(tool_number),
+                )
 
     if time.ticks_diff(now, last_poll_at) >= POLL_INTERVAL_MS:
         last_poll_at = now
