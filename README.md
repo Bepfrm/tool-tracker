@@ -26,18 +26,21 @@ Stage 2 also accepts these commands through the same ntfy topic:
 
 ## Wiring
 
-This project uses the third switch connection from the prototype:
+Stage 2 uses all three switch connections from the prototype:
 
-| Connection | Pico location |
-|---|---|
-| Switch signal | Physical pin 6 / GP4 |
-| Switch ground | Physical pin 8 / GND |
-| Red VEX wire | Leave disconnected |
+| Tool | Switch signal | Switch ground |
+|---|---|---|
+| Tool 1 | Physical pin 1 / GP0 | Physical pin 3 / GND |
+| Tool 2 | Physical pin 6 / GP4 | Physical pin 8 / GND |
+| Tool 3 | Physical pin 2 / GP1 | Physical pin 3 / GND |
 
 The code uses the Pico's internal pull-up resistor:
 
-- Switch pressed: GP4 is connected to ground and the tool is present.
-- Switch released: GP4 is high and the tool is removed.
+- Switch pressed: its GPIO is connected to ground and the tool is present.
+- Switch released: its GPIO is high and the tool is removed.
+
+Leave the red VEX wire disconnected. Connect only the switch signal and ground
+wires.
 
 Do not connect a 5 V signal to a Pico GPIO.
 
@@ -94,12 +97,14 @@ secrets.py
 Expected behavior:
 
 - Pico starts: `Pico Connected`
-- Tool presses switch: `Tool Returned`
-- Tool releases switch: `Tool Removed`
+- A tool presses its switch: `Tool 1 Returned`, `Tool 2 Returned`, or
+  `Tool 3 Returned`
+- A tool releases its switch: `Tool 1 Removed`, `Tool 2 Removed`, or
+  `Tool 3 Removed`
 
 Type `/off` in the ntfy topic to stop tool alerts. Type `/on` to resume them.
 The switch and onboard LED continue operating while notifications are off.
-Type `/status` to request the current state.
+Type `/status` to request the current state of all three tools.
 
 Commands are checked approximately every five seconds. The notification
 setting returns to its configured default after the Pico restarts.
