@@ -1,7 +1,10 @@
 # Tool Tracker
 
 This uses three limit switches to check whether tools are in their slots. A
-Raspberry Pi Pico W reads the switches and sends updates through ntfy.
+Raspberry Pi Pico W reads the switches and sends updates through ntfy. The 
+main goal of this is to try to mimic the usage cases of the more expensive
+tool tracking boxes such as the one from snap-on. In the future, I'll 
+impement features such as ID pin, or cloud storage, or maybe even a display.
 
 ## Wiring
 
